@@ -151,6 +151,18 @@ torqueAddSourceDirectories("sim")
 # Handle module
 torqueAddSourceDirectories("module")
 
+# Handle Browser Render (CEF embedded browser on 3D surfaces)
+torqueAddSourceDirectories("browserRender")
+if(TORQUE_CEF_ENABLED)
+   find_package(CEF REQUIRED)
+   set(TORQUE_INCLUDE_DIRECTORIES ${TORQUE_INCLUDE_DIRECTORIES} ${CEF_INCLUDE_DIRS})
+   set(TORQUE_LINK_THIRDPARTY ${TORQUE_LINK_THIRDPARTY} ${CEF_LIBRARIES})
+   set(TORQUE_COMPILE_DEFINITIONS ${TORQUE_COMPILE_DEFINITIONS} TORQUE_CEF_ENABLED)
+endif()
+
+# Handle AI Bridge (external LLM/AI service integration)
+torqueAddSourceDirectories("aiBridge")
+
 # Handle forest
 torqueAddSourceDirectories("forest" "forest/ts")
 if(TORQUE_OPENGL)

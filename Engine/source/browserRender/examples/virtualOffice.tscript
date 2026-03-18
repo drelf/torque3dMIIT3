@@ -1,0 +1,125 @@
+//-----------------------------------------------------------------------------
+// Virtual Office Example - TorqueScript
+// Demonstrates: AI agents + embedded browsers + AI bridge
+//
+// This script sets up a virtual office where AI-controlled characters
+// sit at desks with browser screens, controllable by an external LLM.
+//-----------------------------------------------------------------------------
+
+// === 1. CREATE BROWSER SCREENS ON DESK MONITORS ===
+
+// Desk 1 - Research Agent's screen
+%screen1 = new BrowserTexture() {
+   url = "https://www.google.com";
+   resolution = "1920 1080";
+   refreshRate = 30;
+};
+
+// Desk 2 - Code Agent's screen
+%screen2 = new BrowserTexture() {
+   url = "https://github.com";
+   resolution = "1920 1080";
+   refreshRate = 30;
+};
+
+// Desk 3 - Communications Agent's screen
+%screen3 = new BrowserTexture() {
+   url = "about:blank";
+   resolution = "1920 1080";
+   refreshRate = 30;
+};
+
+// Large wall display - Dashboard
+%wallScreen = new BrowserTexture() {
+   url = "https://grafana.example.com/dashboard";
+   resolution = "3840 2160";
+   refreshRate = 15;
+};
+
+// === 2. BIND BROWSER TEXTURES TO 3D SCREEN MATERIALS ===
+
+// Each desk has a screen mesh with a material slot.
+// We replace the diffuse texture with the browser output.
+DeskScreen1_Material.diffuseMap[0] = %screen1.getTextureTarget();
+DeskScreen2_Material.diffuseMap[0] = %screen2.getTextureTarget();
+DeskScreen3_Material.diffuseMap[0] = %screen3.getTextureTarget();
+WallDisplay_Material.diffuseMap[0] = %wallScreen.getTextureTarget();
+
+// === 3. SPAWN AI AGENTS ===
+
+// Research Agent - sits at desk 1
+%agent1 = new AIPlayer() {
+   dataBlock = "OfficeWorkerData";
+   position = "10 5 0";  // Desk 1 chair position
+};
+
+// Code Agent - sits at desk 2
+%agent2 = new AIPlayer() {
+   dataBlock = "OfficeWorkerData";
+   position = "10 15 0";  // Desk 2 chair position
+};
+
+// Communications Agent - sits at desk 3
+%agent3 = new AIPlayer() {
+   dataBlock = "OfficeWorkerData";
+   position = "10 25 0";  // Desk 3 chair position
+};
+
+// === 4. REGISTER AGENTS WITH THE AI BRIDGE ===
+
+aiBridgeRegisterAgent(1, %agent1.getId());
+aiBridgeRegisterAgent(2, %agent2.getId());
+aiBridgeRegisterAgent(3, %agent3.getId());
+
+// Bind browsers to agents so AI can control what's on their screens
+aiBridgeBindBrowser(1, %screen1.getId());
+aiBridgeBindBrowser(2, %screen2.getId());
+aiBridgeBindBrowser(3, %screen3.getId());
+
+// === 5. START THE AI BRIDGE LISTENER ===
+// External AI service connects here to control everything.
+
+aiBridgeStart(9090);
+
+echo("Virtual Office: Ready!");
+echo("  - 3 AI agents at their desks");
+echo("  - 4 browser screens active");
+echo("  - AI Bridge listening on port 9090");
+echo("");
+echo("Connect your LLM service to localhost:9090 to control the office.");
+
+// === 6. AGENT CALLBACKS ===
+// These fire when agents complete actions, useful for AI feedback loop.
+
+function OfficeWorkerData::onReachDestination(%this, %obj)
+{
+   %id = %obj.agentId;
+   // Notify the AI bridge that the agent arrived.
+   echo("Agent" SPC %id SPC "reached destination.");
+   // The AI bridge TCP connection would send this event to the LLM.
+}
+
+function OfficeWorkerData::onStuck(%this, %obj)
+{
+   %id = %obj.agentId;
+   echo("Agent" SPC %id SPC "is stuck! Requesting new path...");
+}
+
+// === 7. EXAMPLE: MANUAL AGENT CONTROL VIA CONSOLE ===
+// You can also control agents directly from the console:
+
+// Move agent 1 to the coffee machine:
+//   %agent1.setMoveDestination("50 30 0 true");
+
+// Make agent 2 look at the wall screen:
+//   %agent2.setAimLocation("0 15 5");
+
+// Load a URL on agent 3's screen:
+//   %screen3.loadUrl("https://mail.google.com");
+
+// Execute JavaScript on a screen:
+//   %screen1.executeJS("document.querySelector('input').value = 'AI search query';");
+
+// Query agent state:
+//   echo(aiBridgeGetState(1));
+//   echo(aiBridgeGetAllStates());
