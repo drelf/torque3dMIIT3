@@ -7,6 +7,7 @@
 #include "T3D/aiPlayer.h"
 #include "browserRender/browserTexture.h"
 #include "console/console.h"
+#include "console/script.h"
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 #include "sim/netObject.h"
@@ -96,7 +97,7 @@ bool AIBridgeManager::startListener(U32 port)
       "}"
       "AIBridgeTCP.listen(%d);", port);
 
-   Con::evaluate(script);
+   Con::evaluatef("%s", script);
 
    mListening = true;
    Con::printf("AIBridgeManager: Listening on port %d", port);
@@ -107,7 +108,7 @@ void AIBridgeManager::stopListener()
 {
    if (mListening)
    {
-      Con::evaluate("if (isObject(AIBridgeTCP)) AIBridgeTCP.disconnect();");
+      Con::evaluatef("if (isObject(AIBridgeTCP)) AIBridgeTCP.disconnect();");
       mListening = false;
       Con::printf("AIBridgeManager: Listener stopped.");
    }
@@ -304,7 +305,8 @@ const char* AIBridgeManager::_handleSpawn(const char *datablock, F32 x, F32 y, F
       "%%ai.registerObject(); return %%ai.getId();",
       datablock, x, y, z);
 
-   const char *result = Con::evaluate(script);
+   Con::EvalResult evalResult = Con::evaluatef("%s", script);
+   const char *result = evalResult.valid ? evalResult.value.getString() : "0";
 
    static char buf[256];
    dSprintf(buf, sizeof(buf),
@@ -319,7 +321,8 @@ const char* AIBridgeManager::_handleQuery(U32 id)
 
 const char* AIBridgeManager::_handleExec(const char *script)
 {
-   const char *result = Con::evaluate(script);
+   Con::EvalResult evalResult = Con::evaluatef("%s", script);
+   const char *result = evalResult.valid ? evalResult.value.getString() : "";
 
    static char buf[4096];
    dSprintf(buf, sizeof(buf),
